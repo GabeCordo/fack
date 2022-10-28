@@ -11,45 +11,33 @@ The package provides a native feel to designing remote callable functions for JS
 Node is responsible for registering new net.Function and handling low-level net.http functionality to communicate between
 the client-server endpoints.
 
-##### NewNode(address Address, optional ...interface{}) *Node
+##### NewNode(address Address, optional ...any) *Node
 Generates a new Node structure on the heap and returns a pointer to the object. The parameter "optional"
 stores a variadic amount of optionals that can be passed to a Node structure.
 
-**optional ...interface{}**
+**optional ...any**
 1. Pointer to Auth
    If a valid auth pointer is passed to Node, routes can be registered with authentication enabled.
 
-2. Pointer to Logger
-   If a valid logger pointer is passed to Node, messages can be sent to stdout and disk.
-
 3. Boolean Debug Toggle
 
-##### IsAuthAttached() bool
-Returns false if the Auth pointer holds a nil value, else returns true.
-
-##### IsLoggerAttached() bool
-Returns false if the Logger pointer holds a nil value, else returns true.
-
-##### MissingModules() bool
-Return false if the Auth or Logger pointer holds a nil value, else returns true.
-
-##### SetStatus(status NodeStatus)
+##### Status(status NodeStatus)
 A thread safe function for modifying to Node state. Before changing the Node
 state, an object mutex is locked to avoid a race condition when modifying NodeState.
 
-##### SetName(name string)
+##### Name(name string)
 A safer way to modifying the Node name given during Startup. A node name should be static during runtime given that during a time interval from (0 to inf)
 if N logs are stored, using the node name as an id, then a dynamic name change at time t
 would render new logs created from (t to inf) detached from logs created from (0 to t)
 
-##### Function(path string, handler Router, methods []string, auth bool) error
+##### Function(path string, handler Router) *Route
 Registers a new route to handle HTTP GET, POST, PULL, and DELETE requests related to JSON encoded requests.
 
 ##### Registering a New Function
-![Registering a New Function](../.bin/activity_register_function.png)
+![Registering a New Function](.bin/activity_register_function.png)
 
 ##### The Function Wrapper
-![The Function Wrapper](../.bin/activity_register_function.png)
+![The Function Wrapper](.bin/activity_register_function.png)
 
 ##### Start()
 Switches the Node into a Running state and starts the HTTP server.
@@ -86,7 +74,7 @@ Why not place method into request type as well?
 - a lambda can support > 1 HTTP method
 - it is safer to use a server-defined method that the node has control over
 
-![Is Endpoint Authorized](../.bin/activity_is_endpoint_authorized.png)
+![Is Endpoint Authorized](.bin/activity_is_endpoint_authorized.png)
 
 ---
 
@@ -119,16 +107,16 @@ when dynamically registering new PublicKeys on remote Nodes.
 Returns true if the ECDSA generated signature found in the **request.Auth.Signature** matches the ecdsa.Public key found in
 the Endpoint.PublicKey field.
 
-![Validate Source](../.bin/activity_validate_source.png)
+![Validate Source](.bin/activity_validate_source.png)
 
 ##### HasPermissionToUseMethod(route, method string)
-Given a net.Function route, the function evalutes whether the *global* or *local* permission bitmaps give the destination access
+Given a net.Function route, the function evaluates whether the *global* or *local* permission bitmaps give the destination access
 to the server-specified HTTP method.
 
 **[!] Note** if no *global* or *local* permission bitmap is associated with the net.Endpoint, then HasPermissionToUseMethod will
 always evaluate to false.
 
-![Has Permission To Use Method](../.bin/activity_has_permission_to_send.png)
+![Has Permission To Use Method](.bin/activity_has_permission_to_send.png)
 
 ##### String() string
 Returns a JSON representation of the Auth structure.
@@ -194,7 +182,7 @@ Generates a new NOnce and Signature based on the internal contents hashed by Req
 a request can be sent if a net.Function has authentication enabled. If the request is signed and passed to a net.Function with authentication disabled,
 the net.Function wrapper will ignore the Request.Auth JSON key - this will not reduce performance.
 
-![Sign](../.bin/activity_sign.png)
+![Sign](.bin/activity_sign.png)
 
 ##### Bytes() []byte
 Returns a byte array holding the JSON encoding of the structure. This function should not be used to generate a hash for
@@ -205,7 +193,7 @@ Returns a byte array holding the SHA256 representation of the Lambda and Nonce c
 The SHA256 byte array should be used as the input for ECDSA signing a verification to authenticate the sender of
 a Request.
 
-![Hash a Request for ECDSA](../.bin/activity_request_hash.png)
+![Hash a Request for ECDSA](.bin/activity_request_hash.png)
 
 ---
 
@@ -220,7 +208,7 @@ event that the Function handling the response has not been implemented fully or 
 Sets that status of the response. The value passed as an argument to httpResponseCode must be a valid HTTP
 code as defined by the HTTP protocol.
 
-#### AddPair(key string, value interface{})
+#### AddPair(key string, value any)
 Inserts a key->value pair into the Response's Data hashmap. Any application data that correlates to the initial request
 should be added here.
 
