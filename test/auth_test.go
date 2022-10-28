@@ -23,7 +23,7 @@ const (
 /*? Test Function */
 
 func AuthenticatedIndex(request fack.Request, response fack.Response) {
-	response.Status(http.StatusOK).Description("authenticated")
+	response.SetStatus(http.StatusOK).SetDescription("authenticated")
 }
 
 func TestECDSABytesToString(t *testing.T) {
@@ -81,9 +81,10 @@ func TestAuthNoGlobalOrLocalPermissionsPresent(t *testing.T) {
 	var ne *fack.Endpoint = fack.NewEndpoint("test", &privateKey.PublicKey)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.Address{"localhost", 8000}
-	n := rpc.NewNode(a, false, na) // pass a nil to logger pointer ~ no logging
-	n.Function("/", AuthenticatedIndex, []string{"GET"}, true)
+	a := fack.LocalHost().Port(8000)
+	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
+	route := n.Function("/", AuthenticatedIndex).Method(fack.GET)
+	route.RequiresAuth = true
 
 	go n.Start()
 
@@ -119,9 +120,10 @@ func TestAuthGlobalPermissionPresent(t *testing.T) {
 	ne.AddGlobalPermission(globalPermissionMap)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.Address{"localhost", 8000}
-	n := rpc.NewNode(a, false, na) // pass a nil to logger pointer ~ no logging
-	n.Function("/", AuthenticatedIndex, []string{"GET"}, true)
+	a := fack.LocalHost().Port(8000)
+	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
+	route := n.Function("/", AuthenticatedIndex).Method(fack.GET)
+	route.RequiresAuth = true
 
 	go n.Start()
 
@@ -137,7 +139,7 @@ func TestAuthGlobalPermissionPresent(t *testing.T) {
 		t.Error("Failed to startup an HTTP GET route.")
 	}
 
-	if (*resp).GetData()["status"] != "authenticated" {
+	if (*resp).GetDescription() != "authenticated" {
 		t.Error("Node could not authenticate a valid host")
 	}
 }
@@ -158,9 +160,9 @@ func TestAuthLocalPermissionPresent(t *testing.T) {
 	ne.AddLocalPermission("/", localPermissionMap)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.Address{"localhost", 8000}
-	n := rpc.NewNode(a, false, na) // pass a nil to logger pointer ~ no logging
-	n.Function("/", AuthenticatedIndex, []string{"GET"}, true)
+	a := fack.LocalHost().Port(8000)
+	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
+	n.Function("/", AuthenticatedIndex).Method(fack.GET)
 
 	go n.Start()
 
@@ -176,7 +178,7 @@ func TestAuthLocalPermissionPresent(t *testing.T) {
 		t.Error("Failed to startup an HTTP GET route.")
 	}
 
-	if (*resp).GetData()["status"] != "authenticated" {
+	if (*resp).GetDescription() != "authenticated" {
 		t.Error("Node could not authenticate a valid host")
 	}
 }
@@ -199,9 +201,10 @@ func TestAuthGlobalAndLocalPermissionsPresent(t *testing.T) {
 	ne.AddLocalPermission("/", localPermissionMap)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.Address{"localhost", 8000}
-	n := rpc.NewNode(a, false, na) // pass a nil to logger pointer ~ no logging
-	n.Function("/", AuthenticatedIndex, []string{"GET", "POST"}, true)
+	a := fack.LocalHost().Port(8000)
+	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
+	route := n.Function("/", AuthenticatedIndex).Method(fack.GET).Method(fack.POST)
+	route.RequiresAuth = true
 
 	go n.Start()
 
@@ -217,7 +220,7 @@ func TestAuthGlobalAndLocalPermissionsPresent(t *testing.T) {
 		t.Error("Failed to startup an HTTP GET route.")
 	}
 
-	if (*resp).GetData()["status"] != "authenticated" {
+	if (*resp).GetDescription() != "authenticated" {
 		t.Error("Node could not authenticate a valid host")
 	}
 

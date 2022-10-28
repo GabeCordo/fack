@@ -58,14 +58,6 @@ func IsUsingJSONContent(r *http.Request) bool {
 	return content == "application/json"
 }
 
-func ArrayToLookupHashTable(a []string) map[string]any {
-	m := make(map[string]any)
-	for _, i := range a {
-		m[i] = nil
-	}
-	return m
-}
-
 func ByteToString(data []byte) string {
 	var s string
 

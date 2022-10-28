@@ -23,11 +23,11 @@ const (
 
 type Request struct {
 	Function string   `json:"function"`
-	Param    []string `json:"param"`
+	Param    []string `json:"param,omitempty"`
 	Auth     struct {
-		Signature []byte `json:"signature"`
-		Nonce     int64  `json:"nonce"`
-	} `json:"auth"`
+		Signature []byte `json:"signature,omitempty"`
+		Nonce     int64  `json:"nonce,omitempty"`
+	} `json:"auth,omitempty"`
 }
 
 func NewRequest(function string) *Request {

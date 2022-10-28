@@ -16,80 +16,71 @@ const (
 )
 
 type Response struct {
-	status      int               `json:"status"`
-	description string            `json:"description"`
-	data        fack.ResponseData `json:"data"`
+	Status      int               `json:"status"`
+	Description string            `json:"description,omitempty"`
+	Data        fack.ResponseData `json:"data,omitempty"`
 }
 
 func NewResponse() *Response {
 	response := new(Response)
-	response.status = http.StatusNoContent // if the status is never populated, this will be returned by the node
-	response.data = make(fack.ResponseData)
+	response.Status = http.StatusNoContent // if the status is never populated, this will be returned by the node
+	response.Data = make(fack.ResponseData)
 	return response
 }
 
 // interface methods
 
 func (r Response) GetStatus() int {
-	return r.status
+	return r.Status
 }
 
-func (r Response) Status(status int) fack.Response {
+func (r *Response) SetStatus(status int) fack.Response {
 	if status < 0 {
 		panicMessage := fmt.Sprintf("status cannot be negative %d", status)
 		panic(panicMessage)
 	}
-
-	dataCopy := make(fack.ResponseData)
-	for key, value := range r.data {
-		dataCopy[key] = value
-	}
-	return Response{status, r.description, dataCopy}
+	r.Status = status
+	return r
 }
 
 func (r Response) GetDescription() string {
-	return r.description
+	return r.Description
 }
 
-func (r Response) Description(description string) fack.Response {
+func (r *Response) SetDescription(description string) fack.Response {
 	if len(description) == 0 {
 		panic("description cannot be an empty string")
 	}
 
-	dataCopy := make(fack.ResponseData)
-	for key, value := range r.data {
-		dataCopy[key] = value
-	}
-	return Response{r.status, description, dataCopy}
+	r.Description = description
+	return r
 }
 
 func (r Response) GetData() fack.ResponseData {
-	return r.data
+	return r.Data
 }
 
-func (r Response) Pair(key string, value any) fack.Response {
-	if _, found := r.data[key]; found {
+func (r *Response) Pair(key string, value any) fack.Response {
+	if _, found := r.Data[key]; found {
 		panic("the key already exists")
 	}
+	r.Data[key] = value
 
-	dataCopy := make(fack.ResponseData)
-	for key, value := range r.data {
-		dataCopy[key] = value
-	}
-	dataCopy[key] = value
-
-	return Response{r.status, r.description, dataCopy}
+	return r
 }
 
 func (r *Response) AddStatus(httpResponseCode int, message ...string) {
-	r.status = httpResponseCode
+	r.Status = httpResponseCode
 	if len(message) > 0 {
-		r.description = message[0]
+		r.Description = message[0]
 	}
 }
 
 func (r *Response) Send(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(r.status)
-	json.NewEncoder(w).Encode(r)
+	w.WriteHeader(r.Status)
+	err := json.NewEncoder(w).Encode(r)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 }

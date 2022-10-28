@@ -7,7 +7,7 @@ type Router func(request Request, response Response)
 type Node interface {
 	Start()
 	Shutdown()
-	AddFunction(path string, handler Router, methods []string, auth bool)
+	AddFunction(path string, handler Router) Route
 }
 
 type Request interface {
@@ -22,9 +22,9 @@ type ResponseData map[string]interface{}
 
 type Response interface {
 	GetStatus() int
-	Status(int) Response
+	SetStatus(int) Response
 	GetDescription() string
-	Description(string) Response
+	SetDescription(string) Response
 	GetData() ResponseData
 	Pair(string, any) Response
 }

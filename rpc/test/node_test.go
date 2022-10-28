@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/GabeCordo/fack"
 	"github.com/GabeCordo/fack/rpc"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -19,40 +20,35 @@ const (
 /*? Routing Functions */
 
 func index(request fack.Request, response fack.Response) {
-	response.Status(http.StatusOK).Description(SuccessMessage)
+	response.SetStatus(http.StatusOK).SetDescription(SuccessMessage)
 }
 
 /*? Source Code to Test */
 
 func StartupHTTPNodeWithGETEnabled() {
-	a := fack.Address{"localhost", GETPort}
-	n := rpc.NewNode(a, false) // pass a nil to logger pointer ~ no logging
-	n.Function("/", index, []string{"GET"}, false)
+	a := fack.EmptyAddress().Host("localhost").Port(GETPort)
+
+	n := rpc.NewNode(a)
+	n.Function("/", index).Method(fack.GET)
+
 	go n.Start()
 }
 
 /*? Test Function */
 
-func TestNodeMissingAuthStruct(t *testing.T) {
-	a := fack.Address{"", 8000}
-	n := rpc.NewNode(a, false) // pass a nil to logger pointer ~ no logging
-
-	// since we have not registered an auth struct to the node, we should not be allowed to create an auth-mandatory route
-	err := n.Function("/", index, []string{"GET"}, true)
-	if err == nil {
-		t.Error("a node should not be able to create an authenticated routed path without an auth node")
-	}
-}
-
 func TestAttemptAddRouteOutsideOfStartup(t *testing.T) {
-	a := fack.Address{"localhost", 8000}
-	n := rpc.NewNode(a, false)
-	n.SetStatus(fack.Running) // simulate the n.Start() function
+	a := fack.LocalHost().Port(8000)
 
-	err := n.Function("/", index, []string{"GET"}, false)
-	if err == nil {
-		t.Error("a node should not be able to dynamically assign routes while running")
-	}
+	n := rpc.NewNode(a, false)
+	n.Status(fack.Running) // simulate the n.Start() function
+
+	n.Function("/", index).Method(fack.GET)
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("SUCCESS panicked on bad function assignment", err)
+		}
+	}()
 }
 
 func TestNodeReceivedNonJSONRequest(t *testing.T) {
@@ -70,6 +66,21 @@ func TestNodeReceivedNonJSONRequest(t *testing.T) {
 	}
 }
 
+func TestNode(t *testing.T) {
+	address := fack.EmptyAddress().Host("localhost").Port(8080)
+
+	node := rpc.NewNode(address, "test node", true)
+
+	node.Function("/", func(request fack.Request, response fack.Response) {
+		log.Println("received request")
+		response.SetStatus(200).SetDescription("test\n")
+	}).Method(fack.GET)
+
+	go node.Start()
+
+	time.Sleep(5 * time.Second)
+}
+
 func TestNodeRequestToAllowedMethod(t *testing.T) {
 	StartupHTTPNodeWithGETEnabled()
 
@@ -85,7 +96,7 @@ func TestNodeRequestToAllowedMethod(t *testing.T) {
 		t.Error("Failed to startup an HTTP GET route.")
 	}
 
-	//if (resp.Status != http.StatusOK) || ((*resp).Data["status"] != SuccessMessage) {
+	//if (resp.status != http.StatusOK) || ((*resp).Data["status"] != SuccessMessage) {
 	if resp.GetStatus() != http.StatusOK {
 		t.Error("Did not receive the correct HTTP JSON Response")
 	}

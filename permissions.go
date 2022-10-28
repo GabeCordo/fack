@@ -2,63 +2,52 @@ package fack
 
 import "fmt"
 
+type HTTPMethod uint8
+
 const (
-	GET    = "GET"
-	POST   = "POST"
-	PULL   = "PULL"
-	DELETE = "DELETE"
+	GET    HTTPMethod = 0
+	POST              = 1
+	PULL              = 2
+	DELETE            = 3
 )
 
-type Permission struct {
-	Get    bool `json:"get"`
-	Post   bool `json:"post"`
-	Pull   bool `json:"pull"`
-	Delete bool `json:"delete"`
+func HTTPMethodFromString(method string) HTTPMethod {
+	if method == "GET" {
+		return GET
+	} else if method == "POST" {
+		return POST
+	} else if method == "PULL" {
+		return PULL
+	} else {
+		return DELETE
+	}
 }
+
+type Permission [4]bool
 
 func NewPermission(get, post, pull, delete bool) *Permission {
-	perm := new(Permission)
+	permission := new(Permission)
 
-	perm.Get = get
-	perm.Post = post
-	perm.Pull = pull
-	perm.Delete = delete
+	permission[0] = get
+	permission[1] = post
+	permission[2] = pull
+	permission[3] = delete
 
-	return perm
+	return permission
+}
+func (permission *Permission) Enable(method HTTPMethod) {
+	permission[method] = true
 }
 
-func (p Permission) Check(method string) bool {
-	switch method {
-	case GET:
-		return p.Get
-	case POST:
-		return p.Post
-	case DELETE:
-		return p.Delete
-	default:
-		return p.Pull
-	}
+func (permission *Permission) Disable(method HTTPMethod) {
+	permission[method] = false
 }
 
-func (p Permission) String() string {
-	return fmt.Sprintf("Permission[%t, %t, %t, %t]", p.Get, p.Delete, p.Post, p.Pull)
+func (permission Permission) IsEnabled(method HTTPMethod) bool {
+	return permission[method]
 }
 
-func (p Permission) Array() []string {
-	var arrayRepresentation []string
-
-	if p.Get {
-		arrayRepresentation = append(arrayRepresentation, GET)
-	}
-	if p.Post {
-		arrayRepresentation = append(arrayRepresentation, POST)
-	}
-	if p.Pull {
-		arrayRepresentation = append(arrayRepresentation, PULL)
-	}
-	if p.Delete {
-		arrayRepresentation = append(arrayRepresentation, DELETE)
-	}
-
-	return arrayRepresentation
+func (permission Permission) String() string {
+	template := "Permission[%t, %t, %t, %t]"
+	return fmt.Sprintf(template, permission[GET], permission[POST], permission[PULL], permission[DELETE])
 }

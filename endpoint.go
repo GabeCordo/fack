@@ -100,11 +100,11 @@ func (endpoint *Endpoint) ValidateSource(request Request) bool {
 	return ecdsa.VerifyASN1(endpoint.PublicKey, hash[:], request.Signature())
 }
 
-func (endpoint Endpoint) HasPermissionToUseMethod(route, method string) bool {
+func (endpoint Endpoint) HasPermissionToUseMethod(route string, method HTTPMethod) bool {
 	if localPermission, ok := endpoint.LocalPermissions[route]; ok {
-		return localPermission.Check(method)
+		return localPermission.IsEnabled(method)
 	} else {
-		return endpoint.GlobalPermissions.Check(method)
+		return endpoint.GlobalPermissions.IsEnabled(method)
 	}
 }
 

@@ -36,9 +36,9 @@ func (na *Auth) RemoveTrusted(ip string) error {
 	return nil
 }
 
-func (na *Auth) IsEndpointAuthorized(sender *Address, request Request, path, method string) bool {
+func (na *Auth) IsEndpointAuthorized(sender *Address, request Request, path string, method HTTPMethod) bool {
 	validFlag := false // by default, we will assume that the ip doesn't exist in the hash map
-	if endpoint, ok := na.Trusted[sender.Host]; ok {
+	if endpoint, ok := na.Trusted[sender.GetHost()]; ok {
 		// 1. does the user have permission to send an HTTP method request to the current path
 		// 2. does the message come from a user with the same ECDSA key pair
 		validFlag = endpoint.HasPermissionToUseMethod(path, method) && endpoint.ValidateSource(request)
