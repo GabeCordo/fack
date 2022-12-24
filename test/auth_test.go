@@ -92,7 +92,10 @@ func TestAuthNoGlobalOrLocalPermissionsPresent(t *testing.T) {
 	time.Sleep(WaitForServerStart)
 
 	request := rpc.NewRequest("/")
-	request.Sign(privateKey)
+	err = fack.Sign(request, privateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	/* GET request should succeed */
 	resp, err := request.Send("GET", LocalHost+fmt.Sprint(GETPort))
@@ -131,7 +134,10 @@ func TestAuthGlobalPermissionPresent(t *testing.T) {
 	time.Sleep(WaitForServerStart)
 
 	request := rpc.NewRequest("/")
-	request.Sign(privateKey)
+	err = fack.Sign(request, privateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	/* GET request should succeed */
 	resp, err := request.Send("GET", LocalHost+fmt.Sprint(GETPort))
@@ -170,7 +176,10 @@ func TestAuthLocalPermissionPresent(t *testing.T) {
 	time.Sleep(WaitForServerStart)
 
 	request := rpc.NewRequest("/")
-	request.Sign(privateKey)
+	err = fack.Sign(request, privateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	/* GET request should succeed */
 	resp, err := request.Send("GET", LocalHost+fmt.Sprint(GETPort))
@@ -192,27 +201,33 @@ func TestAuthGlobalAndLocalPermissionsPresent(t *testing.T) {
 		t.Error("Could not generate an ECDSA key pair")
 	}
 
-	var na *fack.Auth = fack.NewAuth()
-	var ne *fack.Endpoint = fack.NewEndpoint("test", &privateKey.PublicKey)
+	address := fack.LocalHost().Port(8000)
 
-	globalPermissionMap := fack.Permission{false, false, false, false}
-	localPermissionMap := fack.Permission{true, false, false, false}
-	ne.AddGlobalPermission(globalPermissionMap)
-	ne.AddLocalPermission("/", localPermissionMap)
-	na.AddTrusted("127.0.0.1", ne)
+	var auth *fack.Auth = fack.NewAuth()
+	node := rpc.NewNode(address, auth) // pass a nil to logger pointer ~ no logging
 
-	a := fack.LocalHost().Port(8000)
-	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
-	route := n.Function("/", AuthenticatedIndex).Method(fack.GET).Method(fack.POST)
-	route.RequiresAuth = true
+	var endpoint *fack.Endpoint = fack.NewEndpoint("test", &privateKey.PublicKey)
+	auth.AddTrusted("127.0.0.1", endpoint)
 
-	go n.Start()
+	globalPermissionMap := fack.NewPermission().NoAccess()
+	endpoint.AddGlobalPermission(globalPermissionMap)
+
+	localPermissionMap := fack.NewPermission().Enable(fack.GET)
+	endpoint.AddLocalPermission("/", localPermissionMap)
+
+	route := node.Function("/", AuthenticatedIndex).Method(fack.GET).Method(fack.POST).Auth(true)
+	fmt.Println(route)
+
+	go node.Start()
 
 	// if you are on macos, you may need to give the binary permission to use a socket port
 	time.Sleep(WaitForServerStart)
 
 	request := rpc.NewRequest("/")
-	request.Sign(privateKey)
+	err = fack.Sign(request, privateKey)
+	if err != nil {
+		t.Error(err.Error())
+	}
 
 	/* GET request should succeed */
 	resp, err := request.Send("GET", LocalHost+fmt.Sprint(GETPort))

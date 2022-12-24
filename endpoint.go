@@ -5,11 +5,14 @@ import (
 	"crypto/elliptic"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
+	"strconv"
 )
 
 const (
-	Localhost    = "127.0.0.1"
-	MissingNonce = 0
+	Localhost      = "127.0.0.1"
+	MissingNonce   = 0
+	x509ByteLength = 91
 )
 
 type Endpoint struct {
@@ -17,8 +20,8 @@ type Endpoint struct {
 	X509              string `json:"publicKey"`
 	PublicKey         *ecdsa.PublicKey
 	LastNonce         int64
-	GlobalPermissions Permission            `json:"globalPermissions"`
-	LocalPermissions  map[string]Permission `json:"localPermissions"`
+	GlobalPermissions *Permission            `json:"globalPermissions"`
+	LocalPermissions  map[string]*Permission `json:"localPermissions"`
 }
 
 func NewEndpoint(name string, publicKey *ecdsa.PublicKey) *Endpoint {
@@ -27,16 +30,28 @@ func NewEndpoint(name string, publicKey *ecdsa.PublicKey) *Endpoint {
 	endpoint.Name = name
 	endpoint.PublicKey = publicKey
 	endpoint.LastNonce = MissingNonce
-	endpoint.LocalPermissions = make(map[string]Permission)
+	endpoint.LocalPermissions = make(map[string]*Permission)
 
 	return endpoint
 }
 
-func (endpoint *Endpoint) AddGlobalPermission(permission Permission) {
+func (endpoint *Endpoint) GlobalPermission() *Permission {
+	return endpoint.GlobalPermissions
+}
+
+func (endpoint *Endpoint) AddGlobalPermission(permission *Permission) {
 	endpoint.GlobalPermissions = permission
 }
 
-func (endpoint *Endpoint) AddLocalPermission(route string, permission Permission) bool {
+func (endpoint *Endpoint) LocalPermission(route string) (*Permission, error) {
+	if permission, found := endpoint.LocalPermissions[route]; found {
+		return permission, nil
+	} else {
+		return nil, errors.New("no local permission exists for this route")
+	}
+}
+
+func (endpoint *Endpoint) AddLocalPermission(route string, permission *Permission) bool {
 	if _, found := endpoint.LocalPermissions[route]; !found {
 		endpoint.LocalPermissions[route] = permission
 		return true
@@ -93,11 +108,15 @@ func (endpoint *Endpoint) ValidateSource(request Request) bool {
 	}
 	// we cannot accept the last received or previous nonce, or we risk a threat actor
 	// resending an intercepted nonce/signature to forge credentials
-	if request.Nonce() <= endpoint.LastNonce {
+	if request.GetNonce() <= endpoint.LastNonce {
 		return false
 	}
-	hash := request.Hash()
-	return ecdsa.VerifyASN1(endpoint.PublicKey, hash[:], request.Signature())
+
+	hash := request.GetHash()
+	signature := request.GetSignature()
+	isValidSignature := ecdsa.VerifyASN1(endpoint.PublicKey, hash, signature)
+
+	return isValidSignature
 }
 
 func (endpoint Endpoint) HasPermissionToUseMethod(route string, method HTTPMethod) bool {
@@ -111,4 +130,48 @@ func (endpoint Endpoint) HasPermissionToUseMethod(route string, method HTTPMetho
 func (endpoint Endpoint) String() string {
 	j, _ := json.Marshal(endpoint)
 	return string(j)
+}
+
+func ByteToString(data []byte) string {
+	var s string
+
+	for i := range data {
+		s += strconv.FormatInt(int64(data[i]), 10)
+		if i != (len(data) - 1) {
+			s += " "
+		}
+	}
+
+	return s
+}
+
+// TODO - clean up this function
+func StringToByte(data string) ([]byte, bool) {
+	b := [x509ByteLength]byte{}
+
+	var s string
+
+	j := 0
+	chars := []rune(data)
+	for i := 0; i < len(data); i++ {
+		char := string(chars[i])
+		if char != StringSpace {
+			s += char
+		} else {
+			val, err := strconv.Atoi(s)
+			if err != nil {
+				return b[:], false
+			}
+			b[j] = byte(val)
+			s = EmptyString
+			j++
+		}
+	}
+	val, err := strconv.Atoi(s)
+	if err != nil {
+		return b[:], false
+	}
+	b[j] = byte(val)
+
+	return b[:], true
 }

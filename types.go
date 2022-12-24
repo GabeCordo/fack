@@ -1,7 +1,5 @@
 package fack
 
-import "crypto/ecdsa"
-
 type Router func(request Request, response Response)
 
 type Node interface {
@@ -11,14 +9,15 @@ type Node interface {
 }
 
 type Request interface {
-	Endpoint() string
-	Signature() []byte
-	Hash() [32]byte
-	Nonce() int64
-	Sign(key *ecdsa.PrivateKey) error
+	GetEndpoint() string
+	GetSignature() []byte
+	SetSignature(bytes []byte)
+	GetHash() []byte
+	GetNonce() int64
+	SetNonce(nonce int64)
 }
 
-type ResponseData map[string]interface{}
+type ResponseData map[string]any
 
 type Response interface {
 	GetStatus() int

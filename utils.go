@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 )
 
 // integer constants
 const (
-	maxGeneratedStringLength = 100
+	maxGeneratedStringLength = 32
 	lowerASCIIBound          = 97
 	upperASCIIBound          = 122
-	x509ByteLength           = 91
 )
 
 // string constants
@@ -56,48 +54,4 @@ func GetInternetProtocol(r *http.Request) (*Address, error) {
 func IsUsingJSONContent(r *http.Request) bool {
 	content := r.Header.Get("Content-Type")
 	return content == "application/json"
-}
-
-func ByteToString(data []byte) string {
-	var s string
-
-	for i := range data {
-		s += strconv.FormatInt(int64(data[i]), 10)
-		if i != (len(data) - 1) {
-			s += " "
-		}
-	}
-
-	return s
-}
-
-// TODO - clean up this function
-func StringToByte(data string) ([]byte, bool) {
-	b := [x509ByteLength]byte{}
-
-	var s string
-
-	j := 0
-	chars := []rune(data)
-	for i := 0; i < len(data); i++ {
-		char := string(chars[i])
-		if char != StringSpace {
-			s += char
-		} else {
-			val, err := strconv.Atoi(s)
-			if err != nil {
-				return b[:], false
-			}
-			b[j] = byte(val)
-			s = EmptyString
-			j++
-		}
-	}
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		return b[:], false
-	}
-	b[j] = byte(val)
-
-	return b[:], true
 }

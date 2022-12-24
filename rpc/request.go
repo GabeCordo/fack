@@ -2,11 +2,8 @@ package rpc
 
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
-	"github.com/GabeCordo/fack"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,9 +13,8 @@ import (
 )
 
 const (
-	StandardTimeout   = time.Duration(1) * time.Second
-	Decimal           = 10
-	MissingNonceValue = 0
+	StandardTimeout = time.Duration(1) * time.Second
+	Decimal         = 10
 )
 
 type Request struct {
@@ -38,7 +34,7 @@ func NewRequest(function string) *Request {
 
 // interface methods
 
-func (r Request) Endpoint() string {
+func (r Request) GetEndpoint() string {
 	return r.Function
 }
 
@@ -50,42 +46,32 @@ func (r Request) Bytes() []byte {
 	return byteData
 }
 
-func (r Request) Hash() [32]byte {
+func (r Request) GetHash() []byte {
 	concatenatedString := r.Function + strconv.FormatInt(r.Auth.Nonce, Decimal)
-	return sha256.Sum256([]byte(concatenatedString))
+	bit32ShaBytes := sha256.Sum256([]byte(concatenatedString))
+
+	return bit32ShaBytes[:]
 }
 
-func (r Request) Nonce() int64 {
+func (r Request) GetNonce() int64 {
 	return r.Auth.Nonce
 }
 
-func (r Request) Signature() []byte {
-	return []byte(r.Auth.Signature)
+func (r *Request) SetNonce(nonce int64) {
+	r.Auth.Nonce = nonce
 }
 
-func (r *Request) Sign(key *ecdsa.PrivateKey) error {
-	// if the nonce has never been created, generate one
-	if r.Auth.Nonce == MissingNonceValue {
-		r.Auth.Nonce = fack.GenerateNonce() // int64 -> currentTime * random int
-	} else {
-		// the Node will verify that the nonce is greater than the previous, otherwise
-		// we risk allowing a threat actor to re-send the same nonce and signature again
-		r.Auth.Nonce++
-	}
+func (r Request) GetSignature() []byte {
+	return r.Auth.Signature
+}
 
-	hash := r.Hash()
-	signature, err := ecdsa.SignASN1(rand.Reader, key, hash[:]) // [32]byte -> []byte
-	if err != nil {
-		return err
-	}
-	r.Auth.Signature = signature
-
-	return nil
+func (r *Request) SetSignature(bytes []byte) {
+	r.Auth.Signature = bytes
 }
 
 // rpc methods
 
-func (r *Request) Send(method, url string) (*Response, error) {
+func (r Request) Send(method, url string) (*Response, error) {
 	httpClient := http.Client{Timeout: StandardTimeout}
 
 	httpUrl := url + r.Function

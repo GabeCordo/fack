@@ -1,6 +1,15 @@
 package fack
 
-import "sync"
+import (
+	"crypto/ecdsa"
+	"crypto/rand"
+	"errors"
+	"sync"
+)
+
+const (
+	MissingNonceValue int64 = 0
+)
 
 type Auth struct {
 	Trusted map[string]*Endpoint `json:"trusted"`
@@ -44,4 +53,26 @@ func (na *Auth) IsEndpointAuthorized(sender *Address, request Request, path stri
 		validFlag = endpoint.HasPermissionToUseMethod(path, method) && endpoint.ValidateSource(request)
 	}
 	return validFlag
+}
+
+func Sign(request Request, key *ecdsa.PrivateKey) error {
+	// if the nonce has never been created, generate one
+	var nonce int64
+	if request.GetNonce() == MissingNonceValue {
+		nonce = GenerateNonce() // int64 -> currentTime * random int
+	} else {
+		// the Node will verify that the nonce is greater than the previous, otherwise
+		// we risk allowing a threat actor to re-send the same nonce and signature again
+		nonce = request.GetNonce() + 1
+	}
+	request.SetNonce(nonce)
+
+	hash := request.GetHash()
+	signature, err := ecdsa.SignASN1(rand.Reader, key, hash)
+	if err != nil {
+		errors.New("there was an error signing the request data")
+	}
+	request.SetSignature(signature)
+
+	return nil
 }
