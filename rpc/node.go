@@ -193,6 +193,8 @@ func (node *Node) Function(path string, handler fack.Router) *fack.Route {
 func (node *Node) Start() {
 	node.Status(Running) // thread safe
 
+	log.Printf("(!) http node started on %s\n", node.address.ToString())
+
 	http.ListenAndServe(node.address.ToString(), node.mux)
 }
 

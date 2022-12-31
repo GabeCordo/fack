@@ -81,7 +81,7 @@ func TestAuthNoGlobalOrLocalPermissionsPresent(t *testing.T) {
 	var ne *fack.Endpoint = fack.NewEndpoint("test", &privateKey.PublicKey)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.LocalHost().Port(8000)
+	a := fack.LocalHost().SetPort(8000)
 	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
 	route := n.Function("/", AuthenticatedIndex).Method(fack.GET)
 	route.RequiresAuth = true
@@ -120,10 +120,10 @@ func TestAuthGlobalPermissionPresent(t *testing.T) {
 	var ne *fack.Endpoint = fack.NewEndpoint("test", &privateKey.PublicKey)
 
 	globalPermissionMap := fack.Permission{true, false, false, false}
-	ne.AddGlobalPermission(globalPermissionMap)
+	ne.AddGlobalPermission(&globalPermissionMap)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.LocalHost().Port(8000)
+	a := fack.LocalHost().SetPort(8000)
 	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
 	route := n.Function("/", AuthenticatedIndex).Method(fack.GET)
 	route.RequiresAuth = true
@@ -163,10 +163,10 @@ func TestAuthLocalPermissionPresent(t *testing.T) {
 	var ne *fack.Endpoint = fack.NewEndpoint("test", &privateKey.PublicKey)
 
 	localPermissionMap := fack.Permission{true, false, false, false}
-	ne.AddLocalPermission("/", localPermissionMap)
+	ne.AddLocalPermission("/", &localPermissionMap)
 	na.AddTrusted("127.0.0.1", ne)
 
-	a := fack.LocalHost().Port(8000)
+	a := fack.LocalHost().SetPort(8000)
 	n := rpc.NewNode(a, na) // pass a nil to logger pointer ~ no logging
 	n.Function("/", AuthenticatedIndex).Method(fack.GET)
 
@@ -201,7 +201,7 @@ func TestAuthGlobalAndLocalPermissionsPresent(t *testing.T) {
 		t.Error("Could not generate an ECDSA key pair")
 	}
 
-	address := fack.LocalHost().Port(8000)
+	address := fack.LocalHost().SetPort(8000)
 
 	var auth *fack.Auth = fack.NewAuth()
 	node := rpc.NewNode(address, auth) // pass a nil to logger pointer ~ no logging

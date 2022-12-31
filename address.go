@@ -15,8 +15,8 @@ const (
 )
 
 type Address struct {
-	host string `json:"host"`
-	port int    `json:"port"`
+	Host string `json:"Host"`
+	Port int    `json:"Port"`
 }
 
 func NewAddress(ip string) (*Address, error) {
@@ -30,19 +30,19 @@ func NewAddress(ip string) (*Address, error) {
 	}
 
 	address := new(Address)
-	address.host = split[0]
-	address.port = port
+	address.Host = split[0]
+	address.Port = port
 
 	return address, nil
 }
 
 // EmptyAddress
-// Defaults to localhost port 8080
+// Defaults to localhost Port 8080
 func EmptyAddress() *Address {
 	address := new(Address)
 
-	address.host = ""
-	address.port = 1
+	address.Host = ""
+	address.Port = 1
 
 	return address
 }
@@ -50,47 +50,47 @@ func EmptyAddress() *Address {
 func LocalHost() *Address {
 	address := new(Address)
 
-	address.host = "localhost"
-	address.port = 1
+	address.Host = "localhost"
+	address.Port = 1
 
 	return address
 }
 
-func (a *Address) Host(host string) *Address {
+func (a *Address) SetHost(host string) *Address {
 	runes := []rune(host)
 
 	for _, rune := range runes {
 		if !unicode.IsDigit(rune) && !unicode.IsLetter(rune) && (rune != '_') && (rune != '.') {
-			panic(host + " is an invalid domain, this cannot be assigned as type host")
+			panic(host + " is an invalid domain, this cannot be assigned as type Host")
 		}
 	}
 
-	a.host = host
+	a.Host = host
 
 	return a
 }
 
 func (a Address) GetHost() string {
-	return a.host
+	return a.Host
 }
 
 func (a Address) IsLocalHost() bool {
-	return (a.host == "127.0.0.1") || (a.host == "localhost")
+	return (a.Host == "127.0.0.1") || (a.Host == "localhost")
 }
 
-func (a *Address) Port(port int) *Address {
+func (a *Address) SetPort(port int) *Address {
 	if (port < MinPortValue) || (port > MaxPortValue) {
-		panic("a port must be within (inclusive) of 1 to 65535")
+		panic("a Port must be within (inclusive) of 1 to 65535")
 	}
-	a.port = port
+	a.Port = port
 
 	return a
 }
 
 func (a Address) GetPort() int {
-	return a.port
+	return a.Port
 }
 
 func (a Address) ToString() string {
-	return fmt.Sprintf("%s:%d", a.host, a.port)
+	return fmt.Sprintf("%s:%d", a.Host, a.Port)
 }

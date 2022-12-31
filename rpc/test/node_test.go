@@ -26,7 +26,7 @@ func index(request fack.Request, response fack.Response) {
 /*? Source Code to Test */
 
 func StartupHTTPNodeWithGETEnabled() {
-	a := fack.EmptyAddress().Host("localhost").Port(GETPort)
+	a := fack.EmptyAddress().SetHost("localhost").SetPort(GETPort)
 
 	n := rpc.NewNode(a)
 	n.Function("/", index).Method(fack.GET)
@@ -37,7 +37,7 @@ func StartupHTTPNodeWithGETEnabled() {
 /*? Test Function */
 
 func TestAttemptAddRouteOutsideOfStartup(t *testing.T) {
-	a := fack.LocalHost().Port(8000)
+	a := fack.LocalHost().SetPort(8000)
 
 	n := rpc.NewNode(a, false)
 	n.Status(fack.Running) // simulate the n.Start() function
@@ -67,7 +67,7 @@ func TestNodeReceivedNonJSONRequest(t *testing.T) {
 }
 
 func TestNode(t *testing.T) {
-	address := fack.EmptyAddress().Host("localhost").Port(8080)
+	address := fack.EmptyAddress().SetHost("localhost").SetPort(8080)
 
 	node := rpc.NewNode(address, "test node", true)
 
